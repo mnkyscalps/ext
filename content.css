@@ -1,5 +1,16 @@
 /* Axiom TX Info - Native Column Styles */
 
+/* Widen the Axiom trade feed panel to fit our columns */
+div.min-w-\[292px\].max-w-\[292px\] {
+  min-width: 500px !important;
+  max-width: 500px !important;
+}
+
+/* Give the Age column more room */
+div.max-w-\[32px\] {
+  max-width: 52px !important;
+}
+
 /* Header columns */
 .axiom-header-col {
   display: flex;
