@@ -36,8 +36,10 @@
       display: flex !important;
       min-width: ${IDX_COL_WIDTH}px !important;
       max-width: ${IDX_COL_WIDTH}px !important;
-      justify-content: flex-start;
+      justify-content: flex-end;
       overflow: hidden;
+      padding: 0 8px;
+      margin-left: 4px;
     }
 
     /* Block column */
@@ -45,8 +47,10 @@
       display: flex !important;
       min-width: ${BLK_COL_WIDTH}px !important;
       max-width: ${BLK_COL_WIDTH}px !important;
-      justify-content: flex-start;
+      justify-content: flex-end;
       overflow: hidden;
+      padding: 0 8px;
+      margin-left: 4px;
     }
 
     /* Value text styling */
@@ -67,8 +71,10 @@
     .axiom-custom-header {
       display: flex;
       align-items: center;
-      justify-content: flex-start;
+      justify-content: flex-end;
       flex: 0 0 auto;
+      padding: 0 8px;
+      margin-left: 4px;
     }
     .axiom-custom-header span {
       font-size: 12px;
