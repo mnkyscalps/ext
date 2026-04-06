@@ -1,15 +1,101 @@
-// Axiom TX Info - Content Script
+// ============================================================
+// Axiom Trade – Show Tx Index & Block columns in the trade feed
+// ============================================================
 
 (function () {
-  'use strict';
+  "use strict";
 
-  // === CONFIG ===
+  // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
+  const PANEL_WIDTH = 520;
+  const IDX_COL_WIDTH = 70;
+  const BLK_COL_WIDTH = 90;
+  const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
   const PENDING = new Map();
-  let headerInjected = false;
 
+  // --- 1. Inject CSS overrides ---
+  const style = document.createElement("style");
+  style.textContent = `
+    /* Widen the feed panel */
+    .min-w-\\[292px\\].max-w-\\[292px\\] {
+      min-width: ${PANEL_WIDTH}px !important;
+      max-width: ${PANEL_WIDTH}px !important;
+    }
+
+    /* Style the axiom-tx-info-container */
+    .axiom-tx-info-container {
+      display: flex !important;
+      flex: 0 0 auto !important;
+      gap: 4px;
+    }
+
+    /* Tx Index column */
+    .axiom-col.axiom-col-idx {
+      display: flex !important;
+      min-width: ${IDX_COL_WIDTH}px !important;
+      max-width: ${IDX_COL_WIDTH}px !important;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    /* Block column */
+    .axiom-col.axiom-col-blk {
+      display: flex !important;
+      min-width: ${BLK_COL_WIDTH}px !important;
+      max-width: ${BLK_COL_WIDTH}px !important;
+      justify-content: flex-start;
+      overflow: hidden;
+    }
+
+    /* Value text styling */
+    .axiom-col .axiom-value {
+      font-size: 12px;
+      font-family: "Geist Mono", monospace;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: var(--text-tertiary, #8a8f98);
+    }
+
+    .axiom-col-idx .axiom-value {
+      color: #a78bfa;
+    }
+
+    /* Column header styling */
+    .axiom-custom-header {
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      flex: 0 0 auto;
+    }
+    .axiom-custom-header span {
+      font-size: 12px;
+      font-weight: 400;
+      line-height: 16px;
+      color: var(--text-tertiary, #8a8f98);
+    }
+
+    /* Loading spinner */
+    .axiom-loading {
+      opacity: 0.5;
+    }
+    .axiom-spinner {
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, 0.1);
+      border-top-color: rgba(255, 255, 255, 0.4);
+      border-radius: 50%;
+      animation: axiom-spin 0.8s linear infinite;
+    }
+    @keyframes axiom-spin {
+      to { transform: rotate(360deg); }
+    }
+  `;
+  document.head.appendChild(style);
+
+  // --- 2. API Functions ---
   async function getBlockInfo(signature) {
     if (CACHE.has(signature)) return CACHE.get(signature);
     if (PENDING.has(signature)) return PENDING.get(signature);
@@ -47,46 +133,45 @@
     return str;
   }
 
-  // Find and inject headers into the table header row
-  function injectHeaders() {
-    if (headerInjected) return;
-
-    // Look for header row containing "Age" text
-    const allElements = document.querySelectorAll('div, span');
-    for (const el of allElements) {
-      if (el.textContent.trim() === 'Age' && !el.closest('.axiom-header-injected')) {
-        const headerRow = el.closest('[class*="row"], [class*="header"], div');
-        if (headerRow && headerRow.offsetWidth > 300) {
-          // Check if parent row has multiple column-like children
-          const parent = el.parentElement;
-          if (parent && !parent.dataset.axiomHeader) {
-            parent.dataset.axiomHeader = 'true';
-
-            // Create header columns
-            const idxHeader = document.createElement('div');
-            idxHeader.className = 'axiom-header-col';
-            idxHeader.textContent = 'Idx';
-
-            const blockHeader = document.createElement('div');
-            blockHeader.className = 'axiom-header-col';
-            blockHeader.textContent = 'Block';
-
-            // Insert after the Age column's parent
-            const container = parent.parentElement;
-            if (container) {
-              container.appendChild(idxHeader);
-              container.appendChild(blockHeader);
-              container.classList.add('axiom-header-injected');
-              headerInjected = true;
-              console.log('Axiom TX Info: Headers injected');
-            }
-          }
-          break;
-        }
+  // --- 3. Add column headers ---
+  function addHeaders() {
+    const panels = document.querySelectorAll(
+      '[class*="min-w-[292px]"][class*="max-w-[292px]"]'
+    );
+    let panel = null;
+    for (const p of panels) {
+      if (p.getBoundingClientRect().width > 0) {
+        panel = p;
+        break;
       }
     }
+    if (!panel) return false;
+
+    const headerRow = panel.querySelector(
+      '[class*="max-h-[28px]"][class*="min-h-[28px]"]'
+    );
+    if (!headerRow || headerRow.querySelector(".axiom-custom-header")) {
+      return true;
+    }
+
+    const idxHeader = document.createElement("div");
+    idxHeader.className = "axiom-custom-header";
+    idxHeader.style.minWidth = IDX_COL_WIDTH + "px";
+    idxHeader.style.maxWidth = IDX_COL_WIDTH + "px";
+    idxHeader.innerHTML = `<span>Tx Idx</span>`;
+
+    const blkHeader = document.createElement("div");
+    blkHeader.className = "axiom-custom-header";
+    blkHeader.style.minWidth = BLK_COL_WIDTH + "px";
+    blkHeader.style.maxWidth = BLK_COL_WIDTH + "px";
+    blkHeader.innerHTML = `<span>Block</span>`;
+
+    headerRow.appendChild(idxHeader);
+    headerRow.appendChild(blkHeader);
+    return true;
   }
 
+  // --- 4. Process transaction rows ---
   function findTxRow(link) {
     let el = link.parentElement;
     for (let i = 0; i < 10 && el; i++) {
@@ -144,21 +229,12 @@
   }
 
   function processAllLinks() {
-    // Try to inject headers first
-    injectHeaders();
-
+    addHeaders();
     document.querySelectorAll('a[href*="solscan.io/tx/"], a[href*="solana.fm/tx/"], a[href*="explorer.solana.com/tx/"]')
       .forEach(link => !link.dataset.axiomProcessed && processLink(link));
   }
 
-  function observe() {
-    let timeout;
-    new MutationObserver(() => {
-      clearTimeout(timeout);
-      timeout = setTimeout(processAllLinks, 300);
-    }).observe(document.body, { childList: true, subtree: true });
-  }
-
+  // --- 5. Initialize ---
   async function init() {
     try {
       const res = await fetch(API_URL, {
@@ -171,19 +247,22 @@
     }
 
     console.log('Axiom TX Info: Ready');
-    setTimeout(processAllLinks, 1000);
-    observe();
 
-    let scrollTimeout;
-    window.addEventListener('scroll', () => {
-      clearTimeout(scrollTimeout);
-      scrollTimeout = setTimeout(processAllLinks, 500);
-    }, { passive: true });
+    // Initial processing
+    setTimeout(processAllLinks, 1000);
+
+    // Watch for DOM changes
+    new MutationObserver(() => {
+      processAllLinks();
+    }).observe(document.body, { childList: true, subtree: true });
+
+    // Poll for virtual scroll re-renders
+    setInterval(processAllLinks, POLL_INTERVAL);
   }
 
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', init);
-  } else {
+  if (document.readyState === "complete") {
     init();
+  } else {
+    window.addEventListener("load", init);
   }
 })();
