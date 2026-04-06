@@ -60,11 +60,11 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: #a6c9d1;
+      color: #b3bac9;
     }
 
     .axiom-col-idx .axiom-value {
-      color: #a6c9d1;
+      color: #b3bac9;
     }
 
     /* Column header styling */
