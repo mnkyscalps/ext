@@ -4,7 +4,7 @@
   'use strict';
 
   // === CONFIG ===
-  const API_URL = 'http://localhost:8000';  // Change to your hosted API URL
+  const API_URL = 'http://185.191.118.212:8000';
 
   const CACHE = new Map();
   const PENDING = new Map();

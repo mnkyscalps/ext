@@ -6,7 +6,7 @@
   "permissions": [],
   "host_permissions": [
     "https://axiom.trade/*",
-    "http://localhost:8000/*",
+    "http://185.191.118.212:8000/*",
     "https://*/*"
   ],
   "content_scripts": [
