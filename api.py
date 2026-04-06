@@ -47,21 +47,31 @@ SOLANA_VIEW_API = "https://transition-api.solanaview.com"
 @app.get("/block/{slot}/info")
 async def get_block_info(slot: int):
     """Proxy to solanaview block info API"""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.get(f"{SOLANA_VIEW_API}/block/{slot}/info")
-        if res.status_code != 200:
-            raise HTTPException(res.status_code, "Block not found")
-        return res.json()
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            res = await client.get(f"{SOLANA_VIEW_API}/block/{slot}/info")
+            if res.status_code != 200:
+                raise HTTPException(res.status_code, "Block not found")
+            return res.json()
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Timeout fetching block info")
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @app.get("/validator/{pubkey}/info")
 async def get_validator_info(pubkey: str):
     """Proxy to solanaview validator info API"""
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
-        if res.status_code != 200:
-            raise HTTPException(res.status_code, "Validator not found")
-        return res.json()
+    try:
+        async with httpx.AsyncClient(timeout=60.0) as client:
+            res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
+            if res.status_code != 200:
+                raise HTTPException(res.status_code, "Validator not found")
+            return res.json()
+    except httpx.TimeoutException:
+        raise HTTPException(504, "Timeout fetching validator info")
+    except Exception as e:
+        raise HTTPException(500, str(e))
 
 
 @app.get("/tx/{signature}")
