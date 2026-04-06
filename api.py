@@ -41,6 +41,29 @@ async def root():
     return {"status": "ok"}
 
 
+SOLANA_VIEW_API = "https://transition-api.solanaview.com"
+
+
+@app.get("/block/{slot}/info")
+async def get_block_info(slot: int):
+    """Proxy to solanaview block info API"""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.get(f"{SOLANA_VIEW_API}/block/{slot}/info")
+        if res.status_code != 200:
+            raise HTTPException(res.status_code, "Block not found")
+        return res.json()
+
+
+@app.get("/validator/{pubkey}/info")
+async def get_validator_info(pubkey: str):
+    """Proxy to solanaview validator info API"""
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
+        if res.status_code != 200:
+            raise HTTPException(res.status_code, "Validator not found")
+        return res.json()
+
+
 @app.get("/tx/{signature}")
 async def get_tx_info(signature: str):
     tx = await rpc("getTransaction", [

@@ -7,7 +7,6 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const SOLANA_VIEW_API = 'https://transition-api.solanaview.com';
   const PANEL_WIDTH = 520;
   const IDX_COL_WIDTH = 70;
   const BLK_COL_WIDTH = 90;
@@ -211,15 +210,19 @@
     if (VALIDATOR_CACHE.has(cacheKey)) return VALIDATOR_CACHE.get(cacheKey);
 
     try {
-      // First get block info to get the validator
-      const blockRes = await fetch(`${SOLANA_VIEW_API}/block/${slot}/info`);
+      // First get block info to get the validator (via our proxy API)
+      const blockRes = await fetch(`${API_URL}/block/${slot}/info`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
       if (!blockRes.ok) return null;
       const blockData = await blockRes.json();
 
       if (!blockData.proposer?.votePubkey) return null;
 
-      // Then get validator details
-      const validatorRes = await fetch(`${SOLANA_VIEW_API}/validator/${blockData.proposer.votePubkey}/info`);
+      // Then get validator details (via our proxy API)
+      const validatorRes = await fetch(`${API_URL}/validator/${blockData.proposer.votePubkey}/info`, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
       if (!validatorRes.ok) return null;
       const validatorData = await validatorRes.json();
 
