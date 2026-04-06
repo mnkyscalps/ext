@@ -398,7 +398,7 @@
         <span class="axiom-value">${idx}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
-        <span class="axiom-value axiom-block-value" data-slot="${slot}" title="${slot.toLocaleString()}">${formatSlot(slot)}</span>
+        <span class="axiom-value axiom-block-value" data-slot="${slot}">${formatSlot(slot)}</span>
       </div>
     `;
 
