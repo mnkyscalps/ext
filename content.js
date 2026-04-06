@@ -8,6 +8,7 @@
 
   const CACHE = new Map();
   const PENDING = new Map();
+  let headerInjected = false;
 
   async function getBlockInfo(signature) {
     if (CACHE.has(signature)) return CACHE.get(signature);
@@ -46,6 +47,46 @@
     return str;
   }
 
+  // Find and inject headers into the table header row
+  function injectHeaders() {
+    if (headerInjected) return;
+
+    // Look for header row containing "Age" text
+    const allElements = document.querySelectorAll('div, span');
+    for (const el of allElements) {
+      if (el.textContent.trim() === 'Age' && !el.closest('.axiom-header-injected')) {
+        const headerRow = el.closest('[class*="row"], [class*="header"], div');
+        if (headerRow && headerRow.offsetWidth > 300) {
+          // Check if parent row has multiple column-like children
+          const parent = el.parentElement;
+          if (parent && !parent.dataset.axiomHeader) {
+            parent.dataset.axiomHeader = 'true';
+
+            // Create header columns
+            const idxHeader = document.createElement('div');
+            idxHeader.className = 'axiom-header-col';
+            idxHeader.textContent = 'Idx';
+
+            const blockHeader = document.createElement('div');
+            blockHeader.className = 'axiom-header-col';
+            blockHeader.textContent = 'Block';
+
+            // Insert after the Age column's parent
+            const container = parent.parentElement;
+            if (container) {
+              container.appendChild(idxHeader);
+              container.appendChild(blockHeader);
+              container.classList.add('axiom-header-injected');
+              headerInjected = true;
+              console.log('Axiom TX Info: Headers injected');
+            }
+          }
+          break;
+        }
+      }
+    }
+  }
+
   function findTxRow(link) {
     let el = link.parentElement;
     for (let i = 0; i < 10 && el; i++) {
@@ -64,11 +105,9 @@
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
-        <span class="axiom-label">Idx</span>
         <span class="axiom-value">${idx}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
-        <span class="axiom-label">Block</span>
         <span class="axiom-value" title="${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
       </div>
     `;
@@ -105,6 +144,9 @@
   }
 
   function processAllLinks() {
+    // Try to inject headers first
+    injectHeaders();
+
     document.querySelectorAll('a[href*="solscan.io/tx/"], a[href*="solana.fm/tx/"], a[href*="explorer.solana.com/tx/"]')
       .forEach(link => !link.dataset.axiomProcessed && processLink(link));
   }
