@@ -1,61 +1,65 @@
-/* Axiom TX Info - Badge Styles */
+/* Axiom TX Info - Native Column Styles */
 
 .axiom-tx-info-container {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 2px;
-  margin-left: 10px;
-  padding: 4px 12px;
-  background: rgba(139, 92, 246, 0.15);
-  border: 1px solid rgba(139, 92, 246, 0.35);
-  border-radius: 4px;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  gap: 0;
+  margin-left: 0;
   flex-shrink: 0;
-  white-space: nowrap;
-  min-width: 120px;
-  justify-content: center;
 }
 
 .axiom-col {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  align-items: flex-end;
+  padding: 0 12px;
+  min-width: 70px;
+}
+
+.axiom-col-idx {
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.axiom-col-blk {
+  border-left: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.axiom-label {
+  font-size: 11px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.4);
+  margin-bottom: 2px;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
 }
 
 .axiom-value {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.3px;
+  font-size: 13px;
+  font-weight: 500;
+  color: rgba(255, 255, 255, 0.9);
+  font-family: inherit;
 }
 
 .axiom-col-idx .axiom-value {
-  color: #c4b5fd;
+  color: #a78bfa;
 }
 
 .axiom-col-blk .axiom-value {
-  color: #93c5fd;
+  color: rgba(255, 255, 255, 0.9);
   cursor: help;
-}
-
-/* Divider between columns */
-.axiom-col-idx::after {
-  content: '|';
-  margin: 0 8px;
-  color: rgba(139, 92, 246, 0.4);
-  font-weight: 400;
 }
 
 /* Loading */
 .axiom-loading {
-  min-width: 80px;
-  justify-content: center;
+  opacity: 0.5;
 }
 
 .axiom-spinner {
   display: inline-block;
-  width: 10px;
-  height: 10px;
-  border: 2px solid rgba(167, 139, 250, 0.3);
-  border-top-color: #a78bfa;
+  width: 12px;
+  height: 12px;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  border-top-color: rgba(255, 255, 255, 0.4);
   border-radius: 50%;
   animation: axiom-spin 0.8s linear infinite;
 }

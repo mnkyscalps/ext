@@ -64,10 +64,12 @@
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
+        <span class="axiom-label">Idx</span>
         <span class="axiom-value">${idx}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
-        <span class="axiom-value" title="Block ${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
+        <span class="axiom-label">Block</span>
+        <span class="axiom-value" title="${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
       </div>
     `;
     return el;
