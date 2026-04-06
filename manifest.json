@@ -1,0 +1,25 @@
+{
+  "manifest_version": 3,
+  "name": "Axiom TX Info",
+  "version": "1.0.0",
+  "description": "Shows transaction index and block info on Axiom.trade",
+  "permissions": [],
+  "host_permissions": [
+    "https://axiom.trade/*",
+    "http://localhost:8000/*",
+    "https://*/*"
+  ],
+  "content_scripts": [
+    {
+      "matches": ["https://axiom.trade/*"],
+      "js": ["content.js"],
+      "css": ["content.css"],
+      "run_at": "document_idle"
+    }
+  ],
+  "icons": {
+    "16": "icon.png",
+    "48": "icon.png",
+    "128": "icon.png"
+  }
+}

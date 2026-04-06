@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(python create_icon.py:*)",
+      "Bash(py create_icon.py)",
+      "Bash(dir \"C:\\\\Users\\\\Zacke\\\\Desktop\\\\tool\" /b)",
+      "Bash(powershell -Command:*)",
+      "Bash(Remove-Item \"C:\\\\Users\\\\Zacke\\\\Desktop\\\\tool\\\\image.png\", \"C:\\\\Users\\\\Zacke\\\\Desktop\\\\tool\\\\image copy.png\", \"C:\\\\Users\\\\Zacke\\\\Desktop\\\\tool\\\\main.py\", \"C:\\\\Users\\\\Zacke\\\\Desktop\\\\tool\\\\create_icon.py\" -Force)",
+      "Bash(git init:*)",
+      "Bash(git add:*)",
+      "Bash(git commit:*)"
+    ]
+  }
+}
