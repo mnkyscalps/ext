@@ -1,54 +1,55 @@
-/* Axiom TX Info - Column Styles */
+/* Axiom TX Info - Badge Styles */
 
 .axiom-tx-info-container {
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: 12px;
-  margin-left: auto;
-  padding-left: 12px;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  gap: 2px;
+  margin-left: 8px;
+  padding: 3px 8px;
+  background: rgba(139, 92, 246, 0.15);
+  border: 1px solid rgba(139, 92, 246, 0.35);
+  border-radius: 4px;
+  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .axiom-col {
   display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  min-width: 60px;
-}
-
-.axiom-label {
-  font-size: 9px;
-  font-weight: 600;
-  color: #666;
-  letter-spacing: 0.5px;
-  margin-bottom: 2px;
+  align-items: center;
 }
 
 .axiom-value {
-  font-size: 12px;
-  font-weight: 500;
-  color: #fff;
-  font-family: 'SF Mono', 'Monaco', 'Consolas', monospace;
+  font-size: 11px;
+  font-weight: 600;
 }
 
 .axiom-col-idx .axiom-value {
-  color: #a78bfa;
+  color: #c4b5fd;
 }
 
 .axiom-col-blk .axiom-value {
-  color: #60a5fa;
+  color: #93c5fd;
   cursor: help;
+}
+
+/* Divider between columns */
+.axiom-col-idx::after {
+  content: '|';
+  margin: 0 6px;
+  color: rgba(139, 92, 246, 0.4);
+  font-weight: 400;
 }
 
 /* Loading */
 .axiom-loading {
-  opacity: 0.6;
+  padding: 3px 10px;
 }
 
 .axiom-spinner {
   display: inline-block;
-  width: 14px;
-  height: 14px;
+  width: 10px;
+  height: 10px;
   border: 2px solid rgba(167, 139, 250, 0.3);
   border-top-color: #a78bfa;
   border-radius: 50%;
@@ -57,10 +58,4 @@
 
 @keyframes axiom-spin {
   to { transform: rotate(360deg); }
-}
-
-/* Ensure rows can contain our columns */
-[data-axiom-processed="true"] {
-  display: flex !important;
-  align-items: center;
 }

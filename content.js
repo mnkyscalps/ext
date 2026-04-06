@@ -59,15 +59,14 @@
   function createInfoEl(info) {
     const el = document.createElement('div');
     el.className = 'axiom-tx-info-container';
-    const idx = info.txIndex !== null ? `#${info.txIndex + 1}/${info.totalTxs}` : '-';
+    const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
+    const total = info.totalTxs ? `/${info.totalTxs}` : '';
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
-        <span class="axiom-label">IDX</span>
-        <span class="axiom-value">${idx}</span>
+        <span class="axiom-value">${idx}${total}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
-        <span class="axiom-label">BLOCK</span>
-        <span class="axiom-value" title="${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
+        <span class="axiom-value" title="Block ${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
       </div>
     `;
     return el;
