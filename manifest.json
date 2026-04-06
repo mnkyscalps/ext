@@ -6,7 +6,7 @@
   "permissions": [],
   "host_permissions": [
     "https://axiom.trade/*",
-    "http://185.191.118.212:8000/*",
+    "https://ecotypically-undelayed-teodora.ngrok-free.dev/*",
     "https://*/*"
   ],
   "content_scripts": [

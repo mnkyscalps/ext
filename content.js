@@ -4,7 +4,7 @@
   'use strict';
 
   // === CONFIG ===
-  const API_URL = 'http://185.191.118.212:8000';
+  const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
 
   const CACHE = new Map();
   const PENDING = new Map();
