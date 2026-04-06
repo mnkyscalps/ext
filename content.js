@@ -60,11 +60,11 @@
       white-space: nowrap;
       overflow: hidden;
       text-overflow: ellipsis;
-      color: var(--text-tertiary, #8a8f98);
+      color: #a6c9d1;
     }
 
     .axiom-col-idx .axiom-value {
-      color: #a78bfa;
+      color: #a6c9d1;
     }
 
     /* Column header styling */
@@ -80,7 +80,7 @@
       font-size: 12px;
       font-weight: 400;
       line-height: 16px;
-      color: var(--text-tertiary, #8a8f98);
+      color: #a6c9d1;
     }
 
     /* Loading spinner */
