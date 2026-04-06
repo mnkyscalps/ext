@@ -39,9 +39,11 @@
   }
 
   function formatSlot(slot) {
-    if (slot >= 1e9) return (slot / 1e9).toFixed(2) + 'B';
-    if (slot >= 1e6) return (slot / 1e6).toFixed(1) + 'M';
-    return slot.toLocaleString();
+    const str = slot.toString();
+    if (str.length > 6) {
+      return str.slice(0, 3) + '...' + str.slice(-3);
+    }
+    return str;
   }
 
   function findTxRow(link) {
@@ -60,10 +62,9 @@
     const el = document.createElement('div');
     el.className = 'axiom-tx-info-container';
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
-    const total = info.totalTxs ? `/${info.totalTxs}` : '';
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
-        <span class="axiom-value">${idx}${total}</span>
+        <span class="axiom-value">${idx}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
         <span class="axiom-value" title="Block ${info.slot.toLocaleString()}">${formatSlot(info.slot)}</span>
