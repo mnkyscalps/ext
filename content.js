@@ -15,7 +15,9 @@
 
     const promise = (async () => {
       try {
-        const res = await fetch(`${API_URL}/tx/${signature}`);
+        const res = await fetch(`${API_URL}/tx/${signature}`, {
+          headers: { 'ngrok-skip-browser-warning': 'true' }
+        });
         if (!res.ok) return null;
         const data = await res.json();
         if (data) CACHE.set(signature, data);
@@ -115,7 +117,9 @@
 
   async function init() {
     try {
-      const res = await fetch(API_URL);
+      const res = await fetch(API_URL, {
+        headers: { 'ngrok-skip-browser-warning': 'true' }
+      });
       if (!res.ok) throw new Error();
     } catch {
       console.warn('Axiom TX Info: API not available at', API_URL);
