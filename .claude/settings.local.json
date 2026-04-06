@@ -13,7 +13,8 @@
       "Bash(git branch:*)",
       "Bash(git push:*)",
       "Bash(curl -s \"http://185.191.118.212:8000/\" --max-time 10)",
-      "Bash(curl -s \"http://185.191.118.212:8000/tx/4YQHYJXY8N6P6gaaFJQN2VMMTQKhQmYuuzi5o6zcvyjeFBoXqe5BFpnqaonvhyu5dscoHvSnnSb9oJXZReyqW7BZ\" --max-time 30)"
+      "Bash(curl -s \"http://185.191.118.212:8000/tx/4YQHYJXY8N6P6gaaFJQN2VMMTQKhQmYuuzi5o6zcvyjeFBoXqe5BFpnqaonvhyu5dscoHvSnnSb9oJXZReyqW7BZ\" --max-time 30)",
+      "Bash(curl:*)"
     ]
   }
 }
