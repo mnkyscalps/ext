@@ -268,16 +268,15 @@
     }
   }
 
-  function createTooltip(x, y) {
+  function createTooltip(x, y, height) {
     removeTooltip();
     const tooltip = document.createElement('div');
     tooltip.className = 'axiom-validator-tooltip';
     tooltip.innerHTML = `<div class="axiom-tooltip-loading"><span class="axiom-spinner"></span>&nbsp;Loading...</div>`;
 
-    // Position tooltip above the cursor
+    // Position tooltip below the element
     tooltip.style.left = `${x}px`;
-    tooltip.style.top = `${y - 10}px`;
-    tooltip.style.transform = 'translateY(-100%)';
+    tooltip.style.top = `${y + height + 5}px`;
 
     document.body.appendChild(tooltip);
     currentTooltip = tooltip;
@@ -329,7 +328,7 @@
 
   async function handleBlockHover(e, slot) {
     const rect = e.target.getBoundingClientRect();
-    const tooltip = createTooltip(rect.left, rect.top);
+    const tooltip = createTooltip(rect.left, rect.top, rect.height);
 
     const data = await getValidatorInfo(slot);
     if (currentTooltip === tooltip) {
