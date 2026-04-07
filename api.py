@@ -281,9 +281,16 @@ async def get_tx_info(signature: str):
         raise HTTPException(404, "Transaction not found")
 
     slot = tx["slot"]
+    meta = tx.get("meta") or {}
 
-    # Get fee from transaction meta
-    fee = tx.get("meta", {}).get("fee", 0)
+    # Get total fee and calculate priority fee (total - base fee)
+    # Base fee is 5000 lamports per signature
+    total_fee = meta.get("fee", 0)
+    num_signatures = len(tx.get("transaction", {}).get("signatures", [1]))
+    base_fee = 5000 * num_signatures
+    priority_fee = max(0, total_fee - base_fee)
+
+    logger.info(f"TX {signature[:16]}... total_fee={total_fee}, base={base_fee}, priority={priority_fee}")
 
     # Extract tip amount from transfers to known tip addresses
     tip = extract_tip_amount(tx)
@@ -306,7 +313,7 @@ async def get_tx_info(signature: str):
     except Exception as e:
         logger.warning(f"Failed to get block {slot} for tx index: {e}")
 
-    return {"slot": slot, "txIndex": tx_index, "totalTxs": total_txs, "fee": fee, "tip": tip}
+    return {"slot": slot, "txIndex": tx_index, "totalTxs": total_txs, "fee": priority_fee, "tip": tip}
 
 
 if __name__ == "__main__":
