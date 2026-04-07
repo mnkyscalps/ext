@@ -197,8 +197,17 @@ SOLANA_VIEW_API = "https://transition-api.solanaview.com"
 
 @app.get("/block/{slot}/info")
 async def get_block_info(slot: int):
-    """Return block info instantly - no external calls"""
-    logger.info(f"Returning info for block {slot}")
+    """Get block info from solanaview"""
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.get(f"{SOLANA_VIEW_API}/block/{slot}/info")
+            if res.status_code == 200:
+                logger.info(f"Got block {slot} from solanaview")
+                return res.json()
+    except Exception as e:
+        logger.warning(f"Solanaview block error: {e}")
+
+    # Fallback
     return {
         "slot": slot,
         "blockTime": None,
@@ -210,11 +219,39 @@ async def get_block_info(slot: int):
 
 @app.get("/validator/{pubkey}/info")
 async def get_validator_info(pubkey: str):
-    """Get validator info - return basic info instantly, try external lookup in background"""
+    """Get validator info from solanaview, fallback to solanacompass"""
 
-    # Return basic info immediately - no external calls that could hang
-    # TODO: Add optional external lookup later when we have a reliable source
-    logger.info(f"Returning info for validator {pubkey[:8]}...")
+    # Try solanaview first
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
+            if res.status_code == 200:
+                logger.info(f"Got validator {pubkey[:8]}... from solanaview")
+                return res.json()
+    except Exception as e:
+        logger.warning(f"Solanaview validator error: {e}")
+
+    # Try solanacompass as fallback
+    try:
+        async with httpx.AsyncClient(timeout=5.0) as client:
+            # Solanacompass API endpoint
+            res = await client.get(f"https://api.solanacompass.com/validators/{pubkey}")
+            if res.status_code == 200:
+                logger.info(f"Got validator {pubkey[:8]}... from solanacompass")
+                data = res.json()
+                return {
+                    "name": data.get("name", f"{pubkey[:4]}...{pubkey[-4:]}"),
+                    "iconUrl": data.get("icon", data.get("image", "")),
+                    "activatedStake": data.get("activatedStake", data.get("stake", 0)),
+                    "commission": data.get("commission", 0),
+                    "city": data.get("city", ""),
+                    "country": data.get("country", "")
+                }
+    except Exception as e:
+        logger.warning(f"Solanacompass validator error: {e}")
+
+    # Fallback to basic info
+    logger.info(f"Returning basic info for validator {pubkey[:8]}...")
     return {
         "name": f"{pubkey[:4]}...{pubkey[-4:]}",
         "iconUrl": "",
