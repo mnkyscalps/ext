@@ -270,7 +270,8 @@
     return sol.toFixed(0) + ' SOL';
   }
 
-  function formatFee(lamports) {
+  function formatTip(lamports) {
+    if (!lamports || lamports === 0) return '-';
     const sol = lamports / 1e9;
     if (sol >= 0.01) return sol.toFixed(3);
     if (sol >= 0.001) return sol.toFixed(4);
@@ -437,7 +438,7 @@
     el.className = 'axiom-tx-info-container';
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     const slot = info.slot;
-    const fee = info.fee ? formatFee(info.fee) : '-';
+    const tip = formatTip(info.tip);
 
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
@@ -447,7 +448,7 @@
         <span class="axiom-value axiom-block-value" data-slot="${slot}">${formatSlot(slot)}</span>
       </div>
       <div class="axiom-col axiom-col-tip">
-        <span class="axiom-value">${fee}</span>
+        <span class="axiom-value">${tip}</span>
       </div>
     `;
 
