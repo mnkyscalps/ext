@@ -224,24 +224,44 @@ def extract_tip_amount(tx: dict) -> int:
     meta = tx.get("meta", {})
     message = tx.get("transaction", {}).get("message", {})
 
+    def check_instruction(ix):
+        """Check if instruction is a transfer to a tip address."""
+        nonlocal tip_total
+
+        # Check parsed system transfers
+        if ix.get("program") == "system":
+            parsed = ix.get("parsed", {})
+            if parsed.get("type") == "transfer":
+                info = parsed.get("info", {})
+                destination = info.get("destination", "")
+                if destination in TIP_ADDRESSES:
+                    tip_total += info.get("lamports", 0)
+                    logger.info(f"Found tip: {info.get('lamports', 0)} lamports to {destination[:8]}...")
+
+        # Also check for transferChecked and other transfer types
+        elif ix.get("program") == "system":
+            parsed = ix.get("parsed", {})
+            if "transfer" in parsed.get("type", "").lower():
+                info = parsed.get("info", {})
+                destination = info.get("destination", info.get("account", ""))
+                if destination in TIP_ADDRESSES:
+                    lamports = info.get("lamports", info.get("amount", 0))
+                    tip_total += lamports
+                    logger.info(f"Found tip (alt): {lamports} lamports to {destination[:8]}...")
+
     # Check inner instructions (most tips are in inner instructions from programs)
     inner_instructions = meta.get("innerInstructions", [])
     for inner in inner_instructions:
         for ix in inner.get("instructions", []):
-            if ix.get("program") == "system" and ix.get("parsed", {}).get("type") == "transfer":
-                info = ix["parsed"].get("info", {})
-                destination = info.get("destination", "")
-                if destination in TIP_ADDRESSES:
-                    tip_total += info.get("lamports", 0)
+            check_instruction(ix)
 
     # Also check top-level instructions
     instructions = message.get("instructions", [])
     for ix in instructions:
-        if ix.get("program") == "system" and ix.get("parsed", {}).get("type") == "transfer":
-            info = ix["parsed"].get("info", {})
-            destination = info.get("destination", "")
-            if destination in TIP_ADDRESSES:
-                tip_total += info.get("lamports", 0)
+        check_instruction(ix)
+
+    if tip_total > 0:
+        logger.info(f"Total tip extracted: {tip_total} lamports ({tip_total / 1e9} SOL)")
 
     return tip_total
 
