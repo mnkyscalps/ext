@@ -465,32 +465,43 @@
 
   // --- 4b. Add column headers (Table View) ---
   function addTableHeaders() {
-    const tables = document.querySelectorAll('table');
-    tables.forEach(table => {
-      const thead = table.querySelector('thead tr');
-      if (!thead || thead.querySelector('.axiom-table-header')) return;
+    // Find all table header rows
+    const headerRows = document.querySelectorAll('table thead tr, table tr:first-child');
+    headerRows.forEach(headerRow => {
+      if (headerRow.querySelector('.axiom-table-header')) return;
 
-      // Check if this is a trades table (has Trader column or similar)
-      const headers = thead.querySelectorAll('th');
-      const headerTexts = Array.from(headers).map(h => h.textContent.toLowerCase());
-      const isTradesTable = headerTexts.some(t => t.includes('trader') || t.includes('type') || t.includes('amount'));
-      if (!isTradesTable) return;
+      // Check if this row has header-like content (th elements or header text)
+      const cells = headerRow.querySelectorAll('th, td');
+      if (cells.length === 0) return;
 
-      const idxTh = document.createElement('th');
+      const cellTexts = Array.from(cells).map(c => c.textContent.toLowerCase());
+      const isTradesHeader = cellTexts.some(t =>
+        t.includes('trader') || t.includes('type') || t.includes('amount') ||
+        t.includes('age') || t.includes('total sol') || t.includes('mc')
+      );
+      if (!isTradesHeader) return;
+
+      // Use same element type as existing headers
+      const tagName = cells[0].tagName;
+
+      const idxTh = document.createElement(tagName);
       idxTh.className = 'axiom-table-header';
+      idxTh.style.cssText = 'padding: 10px 12px; color: #6b7280; font-weight: 500;';
       idxTh.textContent = 'Tx Idx';
 
-      const blkTh = document.createElement('th');
+      const blkTh = document.createElement(tagName);
       blkTh.className = 'axiom-table-header';
+      blkTh.style.cssText = 'padding: 10px 12px; color: #6b7280; font-weight: 500;';
       blkTh.textContent = 'Block';
 
-      const tipTh = document.createElement('th');
+      const tipTh = document.createElement(tagName);
       tipTh.className = 'axiom-table-header';
+      tipTh.style.cssText = 'padding: 10px 12px; color: #6b7280; font-weight: 500;';
       tipTh.textContent = 'Prio/Tip';
 
-      thead.appendChild(idxTh);
-      thead.appendChild(blkTh);
-      thead.appendChild(tipTh);
+      headerRow.appendChild(idxTh);
+      headerRow.appendChild(blkTh);
+      headerRow.appendChild(tipTh);
     });
   }
 
@@ -498,13 +509,24 @@
   function findTxRow(link) {
     let el = link.parentElement;
     for (let i = 0; i < 10 && el; i++) {
+      // Prioritize TR elements for table view
+      if (el.tagName === 'TR') return el;
+      el = el.parentElement;
+    }
+
+    // If no TR found, look for flex/grid rows (panel view)
+    el = link.parentElement;
+    for (let i = 0; i < 10 && el; i++) {
+      // Skip if we're inside a table
+      if (el.closest('table')) return null;
+
       const style = window.getComputedStyle(el);
       const isRow = style.display === 'flex' || style.display === 'grid' ||
-                    el.tagName === 'TR' || /row|item|trade|transaction/.test(el.className);
+                    /row|item|trade|transaction/.test(el.className);
       if (isRow && el.offsetWidth > 200) return el;
       el = el.parentElement;
     }
-    return link.parentElement;
+    return null;
   }
 
   function createInfoEl(info) {
@@ -584,10 +606,14 @@
     if (!sig) return;
 
     const row = findTxRow(link);
-    if (!row || row.dataset.axiomProcessed) return;
+    if (!row) return;
+    if (row.dataset.axiomProcessed) return;
     row.dataset.axiomProcessed = 'true';
 
     const isTableRow = row.tagName === 'TR';
+
+    // Skip header rows
+    if (isTableRow && row.querySelector('th')) return;
 
     if (isTableRow) {
       // Table view - add TD cells
