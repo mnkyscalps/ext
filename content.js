@@ -7,10 +7,9 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 720;
+  const PANEL_WIDTH = 550;
   const IDX_COL_WIDTH = 60;
   const BLK_COL_WIDTH = 80;
-  const TIP_COL_WIDTH = 140;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
@@ -49,17 +48,6 @@
       display: flex !important;
       min-width: ${BLK_COL_WIDTH}px !important;
       max-width: ${BLK_COL_WIDTH}px !important;
-      justify-content: flex-end;
-      overflow: hidden;
-      padding: 0 8px;
-      margin-left: 4px;
-    }
-
-    /* Tip column */
-    .axiom-col.axiom-col-tip {
-      display: flex !important;
-      min-width: ${TIP_COL_WIDTH}px !important;
-      max-width: ${TIP_COL_WIDTH}px !important;
       justify-content: flex-end;
       overflow: hidden;
       padding: 0 8px;
@@ -315,12 +303,6 @@
     return sol.toFixed(4);
   }
 
-  function formatPrioTip(fee, tip) {
-    const prioStr = formatSol(fee);
-    const tipStr = formatSol(tip);
-    return `${prioStr} / ${tipStr}`;
-  }
-
   // --- 3. Tooltip Functions ---
   let currentTooltip = null;
   let hoverTimeout = null;
@@ -353,9 +335,25 @@
     return tooltip;
   }
 
-  function updateTooltip(tooltip, data) {
+  function updateTooltip(tooltip, data, fee, tip) {
+    const prioStr = formatSol(fee);
+    const tipStr = formatSol(tip);
+
+    // Start with prio/tip section (always shown)
+    let html = `
+      <div class="axiom-tooltip-row" style="border-bottom: 1px solid #2d2e3a; padding-bottom: 8px; margin-bottom: 8px;">
+        <span class="axiom-tooltip-label">Priority Fee</span>
+        <span class="axiom-tooltip-value">${prioStr}</span>
+      </div>
+      <div class="axiom-tooltip-row" style="border-bottom: 1px solid #2d2e3a; padding-bottom: 8px; margin-bottom: 8px;">
+        <span class="axiom-tooltip-label">Tip</span>
+        <span class="axiom-tooltip-value">${tipStr}</span>
+      </div>
+    `;
+
     if (!data) {
-      tooltip.innerHTML = `<div class="axiom-tooltip-error">Failed to load validator info</div>`;
+      html += `<div class="axiom-tooltip-error">Failed to load validator info</div>`;
+      tooltip.innerHTML = html;
       return;
     }
 
@@ -366,9 +364,9 @@
     const commission = (validator.commission || 0) + '%';
     const location = [validator.city, validator.country].filter(Boolean).join(', ') || 'Unknown';
     const txCount = block.nonVoteTransactions || 0;
-    const priorityFees = ((block.priorityFees || 0) / 1e9).toFixed(4) + ' SOL';
+    const blockPrioFees = ((block.priorityFees || 0) / 1e9).toFixed(4) + ' SOL';
 
-    tooltip.innerHTML = `
+    html += `
       <div class="axiom-tooltip-header">
         ${icon ? `<img class="axiom-tooltip-icon" src="${icon}" alt="">` : '<div class="axiom-tooltip-icon"></div>'}
         <div class="axiom-tooltip-name">${name}</div>
@@ -390,13 +388,15 @@
         <span class="axiom-tooltip-value">${txCount}</span>
       </div>
       <div class="axiom-tooltip-row">
-        <span class="axiom-tooltip-label">Priority Fees</span>
-        <span class="axiom-tooltip-value">${priorityFees}</span>
+        <span class="axiom-tooltip-label">Block Prio Fees</span>
+        <span class="axiom-tooltip-value">${blockPrioFees}</span>
       </div>
     `;
+
+    tooltip.innerHTML = html;
   }
 
-  function handleBlockHover(e, slot) {
+  function handleBlockHover(e, slot, fee, tip) {
     // Clear any pending hover
     if (hoverTimeout) {
       clearTimeout(hoverTimeout);
@@ -413,7 +413,7 @@
 
       const data = await getValidatorInfo(slot);
       if (currentTooltip === tooltip && isHovering) {
-        updateTooltip(tooltip, data);
+        updateTooltip(tooltip, data, fee, tip);
       }
     }, 300);
   }
@@ -451,15 +451,8 @@
     blkHeader.style.maxWidth = BLK_COL_WIDTH + "px";
     blkHeader.innerHTML = `<span>Block</span>`;
 
-    const tipHeader = document.createElement("div");
-    tipHeader.className = "axiom-custom-header";
-    tipHeader.style.minWidth = TIP_COL_WIDTH + "px";
-    tipHeader.style.maxWidth = TIP_COL_WIDTH + "px";
-    tipHeader.innerHTML = `<span>Prio/Tip</span>`;
-
     headerRow.appendChild(idxHeader);
     headerRow.appendChild(blkHeader);
-    headerRow.appendChild(tipHeader);
     return true;
   }
 
@@ -494,14 +487,8 @@
       blkTh.style.cssText = 'padding: 10px 12px; color: #6b7280; font-weight: 500;';
       blkTh.textContent = 'Block';
 
-      const tipTh = document.createElement(tagName);
-      tipTh.className = 'axiom-table-header';
-      tipTh.style.cssText = 'padding: 10px 12px; color: #6b7280; font-weight: 500;';
-      tipTh.textContent = 'Prio/Tip';
-
       headerRow.appendChild(idxTh);
       headerRow.appendChild(blkTh);
-      headerRow.appendChild(tipTh);
     });
   }
 
@@ -534,23 +521,19 @@
     el.className = 'axiom-tx-info-container';
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     const slot = info.slot;
-    const prioTip = formatPrioTip(info.fee, info.tip);
 
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
         <span class="axiom-value">${idx}</span>
       </div>
       <div class="axiom-col axiom-col-blk">
-        <span class="axiom-value axiom-block-value" data-slot="${slot}">${formatSlot(slot)}</span>
-      </div>
-      <div class="axiom-col axiom-col-tip">
-        <span class="axiom-value">${prioTip}</span>
+        <span class="axiom-value axiom-block-value" data-slot="${slot}" data-fee="${info.fee || 0}" data-tip="${info.tip || 0}">${formatSlot(slot)}</span>
       </div>
     `;
 
-    // Add hover events for block value
+    // Add hover events for block value (shows prio/tip + validator info)
     const blockValue = el.querySelector('.axiom-block-value');
-    blockValue.addEventListener('mouseenter', (e) => handleBlockHover(e, slot));
+    blockValue.addEventListener('mouseenter', (e) => handleBlockHover(e, slot, info.fee, info.tip));
     blockValue.addEventListener('mouseleave', removeTooltip);
 
     return el;
@@ -560,7 +543,6 @@
   function createTableCells(info) {
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     const slot = info.slot;
-    const prioTip = formatPrioTip(info.fee, info.tip);
 
     const idxTd = document.createElement('td');
     idxTd.className = 'axiom-table-cell';
@@ -571,22 +553,20 @@
     const blkSpan = document.createElement('span');
     blkSpan.className = 'axiom-block-value';
     blkSpan.dataset.slot = slot;
+    blkSpan.dataset.fee = info.fee || 0;
+    blkSpan.dataset.tip = info.tip || 0;
     blkSpan.textContent = formatSlot(slot);
-    blkSpan.addEventListener('mouseenter', (e) => handleBlockHover(e, slot));
+    blkSpan.addEventListener('mouseenter', (e) => handleBlockHover(e, slot, info.fee, info.tip));
     blkSpan.addEventListener('mouseleave', removeTooltip);
     blkTd.appendChild(blkSpan);
 
-    const tipTd = document.createElement('td');
-    tipTd.className = 'axiom-table-cell';
-    tipTd.textContent = prioTip;
-
-    return [idxTd, blkTd, tipTd];
+    return [idxTd, blkTd];
   }
 
   function createTableLoader() {
     const td = document.createElement('td');
     td.className = 'axiom-table-cell';
-    td.colSpan = 3;
+    td.colSpan = 2;
     td.innerHTML = '<span class="axiom-spinner"></span>';
     return td;
   }
@@ -628,7 +608,7 @@
         cells.forEach(cell => row.appendChild(cell));
       } else {
         // Add empty cells to maintain table structure
-        for (let i = 0; i < 3; i++) {
+        for (let i = 0; i < 2; i++) {
           const td = document.createElement('td');
           td.className = 'axiom-table-cell';
           td.textContent = '-';
