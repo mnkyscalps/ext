@@ -8,6 +8,10 @@ Run:      uvicorn api:app --host 0.0.0.0 --port 8000
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 import httpx
+import logging
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # === CONFIG ===
 RPC_URL = "https://api.mainnet-beta.solana.com"  # Replace with your RPC
@@ -167,7 +171,12 @@ async def rpc(method: str, params: list):
         })
         data = res.json()
         if "error" in data:
-            raise HTTPException(400, data["error"])
+            error = data["error"]
+            logger.warning(f"RPC error for {method}: {error}")
+            # Return None instead of raising for getBlock (non-critical)
+            if method == "getBlock":
+                return None
+            raise HTTPException(400, error)
         return data.get("result")
 
 
@@ -239,10 +248,14 @@ def extract_tip_amount(tx: dict) -> int:
 
 @app.get("/tx/{signature}")
 async def get_tx_info(signature: str):
-    tx = await rpc("getTransaction", [
-        signature,
-        {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}
-    ])
+    try:
+        tx = await rpc("getTransaction", [
+            signature,
+            {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}
+        ])
+    except HTTPException as e:
+        logger.error(f"Failed to get transaction {signature[:20]}...: {e.detail}")
+        raise
 
     if not tx:
         raise HTTPException(404, "Transaction not found")
@@ -255,19 +268,23 @@ async def get_tx_info(signature: str):
     # Extract tip amount from transfers to known tip addresses
     tip = extract_tip_amount(tx)
 
-    block = await rpc("getBlock", [
-        slot,
-        {"encoding": "jsonParsed", "transactionDetails": "signatures", "maxSupportedTransactionVersion": 0, "commitment": "confirmed", "rewards": False}
-    ])
-
+    # Try to get block info for tx index (non-critical, may fail)
     tx_index = None
     total_txs = None
 
-    if block and "signatures" in block:
-        sigs = block["signatures"]
-        if signature in sigs:
-            tx_index = sigs.index(signature)
-            total_txs = len(sigs)
+    try:
+        block = await rpc("getBlock", [
+            slot,
+            {"encoding": "jsonParsed", "transactionDetails": "signatures", "maxSupportedTransactionVersion": 0, "commitment": "confirmed", "rewards": False}
+        ])
+
+        if block and "signatures" in block:
+            sigs = block["signatures"]
+            if signature in sigs:
+                tx_index = sigs.index(signature)
+                total_txs = len(sigs)
+    except Exception as e:
+        logger.warning(f"Failed to get block {slot} for tx index: {e}")
 
     return {"slot": slot, "txIndex": tx_index, "totalTxs": total_txs, "fee": fee, "tip": tip}
 
