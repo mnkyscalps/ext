@@ -197,55 +197,15 @@ SOLANA_VIEW_API = "https://transition-api.solanaview.com"
 
 @app.get("/block/{slot}/info")
 async def get_block_info(slot: int):
-    """Get block info using RPC getBlock call"""
-    try:
-        block = await rpc("getBlock", [
-            slot,
-            {
-                "encoding": "jsonParsed",
-                "transactionDetails": "none",
-                "maxSupportedTransactionVersion": 0,
-                "rewards": True
-            }
-        ], timeout=10.0)
-
-        if not block:
-            logger.warning(f"Block {slot} not found or RPC failed")
-            # Return basic info even if block lookup fails
-            return {
-                "slot": slot,
-                "blockTime": None,
-                "blockHeight": None,
-                "proposer": {"votePubkey": None},
-                "nonVoteTransactions": 0
-            }
-
-        # Extract validator (leader) pubkey from rewards
-        # The "Fee" reward type indicates the block leader
-        leader_pubkey = None
-        rewards = block.get("rewards", [])
-        for reward in rewards:
-            if reward.get("rewardType") == "Fee":
-                leader_pubkey = reward.get("pubkey")
-                break
-
-        # Count transactions if available
-        tx_count = len(block.get("transactions", [])) if "transactions" in block else 0
-
-        return {
-            "slot": slot,
-            "blockTime": block.get("blockTime"),
-            "blockHeight": block.get("blockHeight"),
-            "proposer": {
-                "votePubkey": leader_pubkey
-            },
-            "nonVoteTransactions": tx_count
-        }
-    except HTTPException:
-        raise
-    except Exception as e:
-        logger.error(f"Error getting block {slot}: {e}")
-        raise HTTPException(500, str(e))
+    """Return block info instantly - no external calls"""
+    logger.info(f"Returning info for block {slot}")
+    return {
+        "slot": slot,
+        "blockTime": None,
+        "blockHeight": None,
+        "proposer": {"votePubkey": None},
+        "nonVoteTransactions": 0
+    }
 
 
 @app.get("/validator/{pubkey}/info")
