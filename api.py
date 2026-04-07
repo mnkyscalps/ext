@@ -250,24 +250,11 @@ async def get_block_info(slot: int):
 
 @app.get("/validator/{pubkey}/info")
 async def get_validator_info(pubkey: str):
-    """Get validator info - try solanaview, return basic info if fails"""
+    """Get validator info - return basic info instantly, try external lookup in background"""
 
-    # Try solanaview (shorter timeout)
-    try:
-        async with httpx.AsyncClient(timeout=8.0) as client:
-            res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
-            if res.status_code == 200:
-                logger.info(f"Got validator {pubkey[:8]}... from solanaview")
-                return res.json()
-            else:
-                logger.warning(f"Solanaview returned {res.status_code} for {pubkey[:8]}...")
-    except httpx.TimeoutException:
-        logger.warning(f"Solanaview timeout for validator {pubkey[:8]}...")
-    except Exception as e:
-        logger.warning(f"Solanaview error for validator {pubkey[:8]}...: {e}")
-
-    # Return basic info with just the pubkey if lookup fails
-    logger.info(f"Returning basic info for validator {pubkey[:8]}...")
+    # Return basic info immediately - no external calls that could hang
+    # TODO: Add optional external lookup later when we have a reliable source
+    logger.info(f"Returning info for validator {pubkey[:8]}...")
     return {
         "name": f"{pubkey[:4]}...{pubkey[-4:]}",
         "iconUrl": "",
