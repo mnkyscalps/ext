@@ -7,10 +7,10 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 680;
+  const PANEL_WIDTH = 750;
   const IDX_COL_WIDTH = 70;
   const BLK_COL_WIDTH = 90;
-  const TIP_COL_WIDTH = 100;
+  const TIP_COL_WIDTH = 120;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
@@ -273,18 +273,9 @@
   function formatTip(lamports) {
     if (!lamports || lamports === 0) return '-';
     const sol = lamports / 1e9;
-
-    // For larger values, show normally
-    if (sol >= 0.1) return sol.toFixed(2);
-    if (sol >= 0.01) return sol.toFixed(3);
-
-    // For small values, use compact scientific notation
-    // e.g., 0.00016 -> "1.6⁻⁴", 0.0041 -> "4.1⁻³"
-    const exp = Math.floor(Math.log10(sol));
-    const mantissa = sol / Math.pow(10, exp);
-    const superscripts = { '-': '⁻', '0': '⁰', '1': '¹', '2': '²', '3': '³', '4': '⁴', '5': '⁵', '6': '⁶', '7': '⁷', '8': '⁸', '9': '⁹' };
-    const expStr = exp.toString().split('').map(c => superscripts[c] || c).join('');
-    return mantissa.toFixed(1) + expStr;
+    if (sol >= 0.01) return sol.toFixed(4);
+    if (sol >= 0.001) return sol.toFixed(5);
+    return sol.toFixed(6);
   }
 
   // --- 3. Tooltip Functions ---
