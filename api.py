@@ -266,16 +266,24 @@ def extract_tip_amount(tx: dict) -> int:
 
 @app.get("/tx/{signature}")
 async def get_tx_info(signature: str):
-    try:
-        tx = await rpc("getTransaction", [
-            signature,
-            {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": "confirmed"}
-        ])
-    except HTTPException as e:
-        logger.error(f"Failed to get transaction {signature[:20]}...: {e.detail}")
-        raise
+    tx = None
+
+    # Try up to 3 times with different commitment levels
+    for attempt, commitment in enumerate(["confirmed", "processed", "finalized"]):
+        try:
+            tx = await rpc("getTransaction", [
+                signature,
+                {"encoding": "jsonParsed", "maxSupportedTransactionVersion": 0, "commitment": commitment}
+            ])
+            if tx:
+                logger.info(f"Found tx {signature[:16]}... on attempt {attempt+1} ({commitment})")
+                break
+        except HTTPException as e:
+            logger.warning(f"Attempt {attempt+1} failed for {signature[:16]}...: {e.detail}")
+            continue
 
     if not tx:
+        logger.warning(f"Transaction not found after all attempts: {signature[:16]}...")
         raise HTTPException(404, "Transaction not found")
 
     slot = tx["slot"]
