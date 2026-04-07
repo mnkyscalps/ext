@@ -230,28 +230,15 @@
     return promise;
   }
 
-  async function fetchWithTimeout(url, options = {}, timeout = 10000) {
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), timeout);
-    try {
-      const res = await fetch(url, { ...options, signal: controller.signal });
-      clearTimeout(timeoutId);
-      return res;
-    } catch (e) {
-      clearTimeout(timeoutId);
-      throw e;
-    }
-  }
-
   async function getValidatorInfo(slot) {
     const cacheKey = `validator_${slot}`;
     if (VALIDATOR_CACHE.has(cacheKey)) return VALIDATOR_CACHE.get(cacheKey);
 
     try {
       // Get block info
-      const blockRes = await fetchWithTimeout(`${API_URL}/block/${slot}/info`, {
+      const blockRes = await fetch(`${API_URL}/block/${slot}/info`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
-      }, 5000);
+      });
 
       let blockData = { slot, nonVoteTransactions: 0, proposer: { votePubkey: null } };
       if (blockRes.ok) {
@@ -262,9 +249,9 @@
       let validatorData = { name: 'Unknown', activatedStake: 0, commission: 0, city: '', country: '' };
       if (blockData.proposer?.votePubkey) {
         try {
-          const validatorRes = await fetchWithTimeout(`${API_URL}/validator/${blockData.proposer.votePubkey}/info`, {
+          const validatorRes = await fetch(`${API_URL}/validator/${blockData.proposer.votePubkey}/info`, {
             headers: { 'ngrok-skip-browser-warning': 'true' }
-          }, 5000);
+          });
           if (validatorRes.ok) {
             validatorData = await validatorRes.json();
           }
