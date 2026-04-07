@@ -260,8 +260,15 @@
 
   // --- 3. Tooltip Functions ---
   let currentTooltip = null;
+  let hoverTimeout = null;
+  let isHovering = false;
 
   function removeTooltip() {
+    isHovering = false;
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      hoverTimeout = null;
+    }
     if (currentTooltip) {
       currentTooltip.remove();
       currentTooltip = null;
@@ -326,14 +333,26 @@
     `;
   }
 
-  async function handleBlockHover(e, slot) {
-    const rect = e.target.getBoundingClientRect();
-    const tooltip = createTooltip(rect.left, rect.top, rect.height);
-
-    const data = await getValidatorInfo(slot);
-    if (currentTooltip === tooltip) {
-      updateTooltip(tooltip, data);
+  function handleBlockHover(e, slot) {
+    // Clear any pending hover
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
     }
+
+    isHovering = true;
+    const rect = e.target.getBoundingClientRect();
+
+    // Wait 300ms before fetching to avoid rapid requests
+    hoverTimeout = setTimeout(async () => {
+      if (!isHovering) return;
+
+      const tooltip = createTooltip(rect.left, rect.top, rect.height);
+
+      const data = await getValidatorInfo(slot);
+      if (currentTooltip === tooltip && isHovering) {
+        updateTooltip(tooltip, data);
+      }
+    }, 300);
   }
 
   // --- 4. Add column headers ---
