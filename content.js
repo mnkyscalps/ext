@@ -7,10 +7,10 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 750;
+  const PANEL_WIDTH = 820;
   const IDX_COL_WIDTH = 70;
   const BLK_COL_WIDTH = 90;
-  const TIP_COL_WIDTH = 120;
+  const TIP_COL_WIDTH = 180;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
@@ -270,7 +270,7 @@
     return sol.toFixed(0) + ' SOL';
   }
 
-  function formatTip(lamports) {
+  function formatSol(lamports) {
     if (!lamports || lamports === 0) return '-';
     const sol = lamports / 1e9;
 
@@ -283,11 +283,17 @@
     const match = str.match(/^0\.(0+)(\d+)/);
     if (match) {
       const zeroCount = match[1].length;
-      const significantDigits = match[2].slice(0, 3); // Take up to 3 significant digits
+      const significantDigits = match[2].slice(0, 3);
       const subscriptNum = zeroCount.toString().split('').map(d => subscripts[parseInt(d)]).join('');
       return `0.0${subscriptNum}${significantDigits}`;
     }
     return sol.toFixed(6);
+  }
+
+  function formatPrioTip(fee, tip) {
+    const prioStr = formatSol(fee);
+    const tipStr = formatSol(tip);
+    return `${prioStr} / ${tipStr}`;
   }
 
   // --- 3. Tooltip Functions ---
@@ -450,7 +456,7 @@
     el.className = 'axiom-tx-info-container';
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     const slot = info.slot;
-    const tip = formatTip(info.tip);
+    const prioTip = formatPrioTip(info.fee, info.tip);
 
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
@@ -460,7 +466,7 @@
         <span class="axiom-value axiom-block-value" data-slot="${slot}">${formatSlot(slot)}</span>
       </div>
       <div class="axiom-col axiom-col-tip">
-        <span class="axiom-value">${tip}</span>
+        <span class="axiom-value">${prioTip}</span>
       </div>
     `;
 
