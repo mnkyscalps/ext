@@ -221,47 +221,45 @@ async def get_validator_info(pubkey: str):
 def extract_tip_amount(tx: dict) -> int:
     """Extract tip amount by finding transfers to known tip addresses."""
     tip_total = 0
-    meta = tx.get("meta", {})
+    meta = tx.get("meta", {}) or {}
     message = tx.get("transaction", {}).get("message", {})
 
-    def check_instruction(ix):
+    def check_instruction(ix, source=""):
         """Check if instruction is a transfer to a tip address."""
         nonlocal tip_total
 
-        # Check parsed system transfers
-        if ix.get("program") == "system":
-            parsed = ix.get("parsed", {})
-            if parsed.get("type") == "transfer":
-                info = parsed.get("info", {})
-                destination = info.get("destination", "")
-                if destination in TIP_ADDRESSES:
-                    tip_total += info.get("lamports", 0)
-                    logger.info(f"Found tip: {info.get('lamports', 0)} lamports to {destination[:8]}...")
+        program = ix.get("program", "")
+        parsed = ix.get("parsed")
 
-        # Also check for transferChecked and other transfer types
-        elif ix.get("program") == "system":
-            parsed = ix.get("parsed", {})
-            if "transfer" in parsed.get("type", "").lower():
-                info = parsed.get("info", {})
-                destination = info.get("destination", info.get("account", ""))
-                if destination in TIP_ADDRESSES:
-                    lamports = info.get("lamports", info.get("amount", 0))
+        # Log all system program instructions for debugging
+        if program == "system" and parsed:
+            info = parsed.get("info", {})
+            dest = info.get("destination", "")
+            lamports = info.get("lamports", 0)
+
+            # Check if it's a transfer type
+            if parsed.get("type") == "transfer":
+                logger.info(f"[{source}] System transfer: {lamports} lamports to {dest[:16]}...")
+
+                if dest in TIP_ADDRESSES:
                     tip_total += lamports
-                    logger.info(f"Found tip (alt): {lamports} lamports to {destination[:8]}...")
+                    logger.info(f"  -> MATCHED TIP ADDRESS!")
 
     # Check inner instructions (most tips are in inner instructions from programs)
     inner_instructions = meta.get("innerInstructions", [])
-    for inner in inner_instructions:
+    for idx, inner in enumerate(inner_instructions):
         for ix in inner.get("instructions", []):
-            check_instruction(ix)
+            check_instruction(ix, f"inner-{idx}")
 
     # Also check top-level instructions
     instructions = message.get("instructions", [])
-    for ix in instructions:
-        check_instruction(ix)
+    for idx, ix in enumerate(instructions):
+        check_instruction(ix, f"top-{idx}")
 
     if tip_total > 0:
-        logger.info(f"Total tip extracted: {tip_total} lamports ({tip_total / 1e9} SOL)")
+        logger.info(f"Total tip: {tip_total} lamports ({tip_total / 1e9} SOL)")
+    else:
+        logger.info(f"No tips found in transaction")
 
     return tip_total
 
