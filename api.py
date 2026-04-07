@@ -233,19 +233,47 @@ async def get_block_info(slot: int):
         raise HTTPException(500, str(e))
 
 
+SOLANA_COMPASS_API = "https://solanacompass.com/api/validator"
+
+
 @app.get("/validator/{pubkey}/info")
 async def get_validator_info(pubkey: str):
-    """Proxy to solanaview validator info API"""
+    """Get validator info - try solanaview first, fallback to solanacompass"""
+
+    # Try solanaview first
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
+        async with httpx.AsyncClient(timeout=15.0) as client:
             res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
-            if res.status_code != 200:
-                raise HTTPException(res.status_code, "Validator not found")
-            return res.json()
+            if res.status_code == 200:
+                logger.info(f"Got validator {pubkey[:8]}... from solanaview")
+                return res.json()
     except httpx.TimeoutException:
-        raise HTTPException(504, "Timeout fetching validator info")
+        logger.warning(f"Solanaview timeout for validator {pubkey[:8]}...")
     except Exception as e:
-        raise HTTPException(500, str(e))
+        logger.warning(f"Solanaview error for validator {pubkey[:8]}...: {e}")
+
+    # Fallback to solanacompass
+    try:
+        async with httpx.AsyncClient(timeout=15.0) as client:
+            res = await client.get(f"{SOLANA_COMPASS_API}/{pubkey}")
+            if res.status_code == 200:
+                logger.info(f"Got validator {pubkey[:8]}... from solanacompass")
+                data = res.json()
+                # Normalize response format to match solanaview
+                return {
+                    "name": data.get("name", data.get("nodePubkey", "Unknown")),
+                    "iconUrl": data.get("image", data.get("iconUrl", "")),
+                    "activatedStake": data.get("activatedStake", data.get("stake", 0)),
+                    "commission": data.get("commission", 0),
+                    "city": data.get("city", ""),
+                    "country": data.get("country", "")
+                }
+    except httpx.TimeoutException:
+        logger.warning(f"Solanacompass timeout for validator {pubkey[:8]}...")
+    except Exception as e:
+        logger.warning(f"Solanacompass error for validator {pubkey[:8]}...: {e}")
+
+    raise HTTPException(404, "Validator not found")
 
 
 def extract_tip_amount(tx: dict) -> int:
