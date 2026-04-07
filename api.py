@@ -161,23 +161,30 @@ app.add_middleware(
 )
 
 
-async def rpc(method: str, params: list):
-    async with httpx.AsyncClient(timeout=30.0) as client:
-        res = await client.post(RPC_URL, json={
-            "jsonrpc": "2.0",
-            "id": 1,
-            "method": method,
-            "params": params,
-        })
-        data = res.json()
-        if "error" in data:
-            error = data["error"]
-            logger.warning(f"RPC error for {method}: {error}")
-            # Return None instead of raising for getBlock (non-critical)
-            if method == "getBlock":
-                return None
-            raise HTTPException(400, error)
-        return data.get("result")
+async def rpc(method: str, params: list, timeout: float = 15.0):
+    try:
+        async with httpx.AsyncClient(timeout=timeout) as client:
+            res = await client.post(RPC_URL, json={
+                "jsonrpc": "2.0",
+                "id": 1,
+                "method": method,
+                "params": params,
+            })
+            data = res.json()
+            if "error" in data:
+                error = data["error"]
+                logger.warning(f"RPC error for {method}: {error}")
+                # Return None instead of raising for getBlock (non-critical)
+                if method == "getBlock":
+                    return None
+                raise HTTPException(400, error)
+            return data.get("result")
+    except httpx.TimeoutException:
+        logger.warning(f"RPC timeout for {method}")
+        return None
+    except Exception as e:
+        logger.error(f"RPC exception for {method}: {e}")
+        return None
 
 
 @app.get("/")
@@ -200,10 +207,18 @@ async def get_block_info(slot: int):
                 "maxSupportedTransactionVersion": 0,
                 "rewards": True
             }
-        ])
+        ], timeout=10.0)
 
         if not block:
-            raise HTTPException(404, "Block not found")
+            logger.warning(f"Block {slot} not found or RPC failed")
+            # Return basic info even if block lookup fails
+            return {
+                "slot": slot,
+                "blockTime": None,
+                "blockHeight": None,
+                "proposer": {"votePubkey": None},
+                "nonVoteTransactions": 0
+            }
 
         # Extract validator (leader) pubkey from rewards
         # The "Fee" reward type indicates the block leader
@@ -233,47 +248,34 @@ async def get_block_info(slot: int):
         raise HTTPException(500, str(e))
 
 
-SOLANA_COMPASS_API = "https://solanacompass.com/api/validator"
-
-
 @app.get("/validator/{pubkey}/info")
 async def get_validator_info(pubkey: str):
-    """Get validator info - try solanaview first, fallback to solanacompass"""
+    """Get validator info - try solanaview, return basic info if fails"""
 
-    # Try solanaview first
+    # Try solanaview (shorter timeout)
     try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
+        async with httpx.AsyncClient(timeout=8.0) as client:
             res = await client.get(f"{SOLANA_VIEW_API}/validator/{pubkey}/info")
             if res.status_code == 200:
                 logger.info(f"Got validator {pubkey[:8]}... from solanaview")
                 return res.json()
+            else:
+                logger.warning(f"Solanaview returned {res.status_code} for {pubkey[:8]}...")
     except httpx.TimeoutException:
         logger.warning(f"Solanaview timeout for validator {pubkey[:8]}...")
     except Exception as e:
         logger.warning(f"Solanaview error for validator {pubkey[:8]}...: {e}")
 
-    # Fallback to solanacompass
-    try:
-        async with httpx.AsyncClient(timeout=15.0) as client:
-            res = await client.get(f"{SOLANA_COMPASS_API}/{pubkey}")
-            if res.status_code == 200:
-                logger.info(f"Got validator {pubkey[:8]}... from solanacompass")
-                data = res.json()
-                # Normalize response format to match solanaview
-                return {
-                    "name": data.get("name", data.get("nodePubkey", "Unknown")),
-                    "iconUrl": data.get("image", data.get("iconUrl", "")),
-                    "activatedStake": data.get("activatedStake", data.get("stake", 0)),
-                    "commission": data.get("commission", 0),
-                    "city": data.get("city", ""),
-                    "country": data.get("country", "")
-                }
-    except httpx.TimeoutException:
-        logger.warning(f"Solanacompass timeout for validator {pubkey[:8]}...")
-    except Exception as e:
-        logger.warning(f"Solanacompass error for validator {pubkey[:8]}...: {e}")
-
-    raise HTTPException(404, "Validator not found")
+    # Return basic info with just the pubkey if lookup fails
+    logger.info(f"Returning basic info for validator {pubkey[:8]}...")
+    return {
+        "name": f"{pubkey[:4]}...{pubkey[-4:]}",
+        "iconUrl": "",
+        "activatedStake": 0,
+        "commission": 0,
+        "city": "",
+        "country": ""
+    }
 
 
 def extract_tip_amount(tx: dict) -> int:
