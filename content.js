@@ -189,6 +189,31 @@
       text-align: center;
       padding: 10px;
     }
+
+    /* === TABLE VIEW STYLES === */
+    .axiom-table-header {
+      padding: 10px 12px;
+      color: #6b7280;
+      font-weight: 500;
+      font-size: 13px;
+      text-align: left;
+    }
+
+    .axiom-table-cell {
+      padding: 10px 12px;
+      font-size: 13px;
+      color: #c4c9d2;
+      font-family: "Geist Mono", monospace;
+      white-space: nowrap;
+    }
+
+    .axiom-table-cell .axiom-block-value {
+      cursor: pointer;
+    }
+
+    .axiom-table-cell .axiom-block-value:hover {
+      color: #fff;
+    }
   `;
   document.head.appendChild(style);
 
@@ -393,7 +418,7 @@
     }, 300);
   }
 
-  // --- 4. Add column headers ---
+  // --- 4. Add column headers (Panel View) ---
   function addHeaders() {
     const panels = document.querySelectorAll(
       '[class*="min-w-[292px]"][class*="max-w-[292px]"]'
@@ -438,6 +463,37 @@
     return true;
   }
 
+  // --- 4b. Add column headers (Table View) ---
+  function addTableHeaders() {
+    const tables = document.querySelectorAll('table');
+    tables.forEach(table => {
+      const thead = table.querySelector('thead tr');
+      if (!thead || thead.querySelector('.axiom-table-header')) return;
+
+      // Check if this is a trades table (has Trader column or similar)
+      const headers = thead.querySelectorAll('th');
+      const headerTexts = Array.from(headers).map(h => h.textContent.toLowerCase());
+      const isTradesTable = headerTexts.some(t => t.includes('trader') || t.includes('type') || t.includes('amount'));
+      if (!isTradesTable) return;
+
+      const idxTh = document.createElement('th');
+      idxTh.className = 'axiom-table-header';
+      idxTh.textContent = 'Tx Idx';
+
+      const blkTh = document.createElement('th');
+      blkTh.className = 'axiom-table-header';
+      blkTh.textContent = 'Block';
+
+      const tipTh = document.createElement('th');
+      tipTh.className = 'axiom-table-header';
+      tipTh.textContent = 'Prio/Tip';
+
+      thead.appendChild(idxTh);
+      thead.appendChild(blkTh);
+      thead.appendChild(tipTh);
+    });
+  }
+
   // --- 5. Process transaction rows ---
   function findTxRow(link) {
     let el = link.parentElement;
@@ -478,6 +534,41 @@
     return el;
   }
 
+  // Create table cells for table view
+  function createTableCells(info) {
+    const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
+    const slot = info.slot;
+    const prioTip = formatPrioTip(info.fee, info.tip);
+
+    const idxTd = document.createElement('td');
+    idxTd.className = 'axiom-table-cell';
+    idxTd.textContent = idx;
+
+    const blkTd = document.createElement('td');
+    blkTd.className = 'axiom-table-cell';
+    const blkSpan = document.createElement('span');
+    blkSpan.className = 'axiom-block-value';
+    blkSpan.dataset.slot = slot;
+    blkSpan.textContent = formatSlot(slot);
+    blkSpan.addEventListener('mouseenter', (e) => handleBlockHover(e, slot));
+    blkSpan.addEventListener('mouseleave', removeTooltip);
+    blkTd.appendChild(blkSpan);
+
+    const tipTd = document.createElement('td');
+    tipTd.className = 'axiom-table-cell';
+    tipTd.textContent = prioTip;
+
+    return [idxTd, blkTd, tipTd];
+  }
+
+  function createTableLoader() {
+    const td = document.createElement('td');
+    td.className = 'axiom-table-cell';
+    td.colSpan = 3;
+    td.innerHTML = '<span class="axiom-spinner"></span>';
+    return td;
+  }
+
   function createLoader() {
     const el = document.createElement('div');
     el.className = 'axiom-tx-info-container axiom-loading';
@@ -496,19 +587,45 @@
     if (!row || row.dataset.axiomProcessed) return;
     row.dataset.axiomProcessed = 'true';
 
-    const loader = createLoader();
-    row.appendChild(loader);
+    const isTableRow = row.tagName === 'TR';
 
-    const info = await getBlockInfo(sig);
-    loader.remove();
+    if (isTableRow) {
+      // Table view - add TD cells
+      const loader = createTableLoader();
+      row.appendChild(loader);
 
-    if (info?.slot) {
-      row.appendChild(createInfoEl(info));
+      const info = await getBlockInfo(sig);
+      loader.remove();
+
+      if (info?.slot) {
+        const cells = createTableCells(info);
+        cells.forEach(cell => row.appendChild(cell));
+      } else {
+        // Add empty cells to maintain table structure
+        for (let i = 0; i < 3; i++) {
+          const td = document.createElement('td');
+          td.className = 'axiom-table-cell';
+          td.textContent = '-';
+          row.appendChild(td);
+        }
+      }
+    } else {
+      // Panel view - add div container
+      const loader = createLoader();
+      row.appendChild(loader);
+
+      const info = await getBlockInfo(sig);
+      loader.remove();
+
+      if (info?.slot) {
+        row.appendChild(createInfoEl(info));
+      }
     }
   }
 
   function processAllLinks() {
-    addHeaders();
+    addHeaders();       // Panel view headers
+    addTableHeaders();  // Table view headers
     document.querySelectorAll('a[href*="solscan.io/tx/"], a[href*="solana.fm/tx/"], a[href*="explorer.solana.com/tx/"]')
       .forEach(link => !link.dataset.axiomProcessed && processLink(link));
   }
