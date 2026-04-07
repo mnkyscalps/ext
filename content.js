@@ -7,10 +7,10 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 600;
+  const PANEL_WIDTH = 680;
   const IDX_COL_WIDTH = 70;
   const BLK_COL_WIDTH = 90;
-  const TIP_COL_WIDTH = 70;
+  const TIP_COL_WIDTH = 100;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
