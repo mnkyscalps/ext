@@ -7,10 +7,10 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 820;
-  const IDX_COL_WIDTH = 70;
-  const BLK_COL_WIDTH = 90;
-  const TIP_COL_WIDTH = 180;
+  const PANEL_WIDTH = 720;
+  const IDX_COL_WIDTH = 60;
+  const BLK_COL_WIDTH = 80;
+  const TIP_COL_WIDTH = 140;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
@@ -299,8 +299,8 @@
     if (!lamports || lamports === 0) return '-';
     const sol = lamports / 1e9;
 
-    // For larger values, show normally
-    if (sol >= 0.01) return sol.toFixed(4);
+    // For larger values, show normally (2 decimal places)
+    if (sol >= 0.01) return sol.toFixed(2);
 
     // For small values, use subscript notation: 0.0₃7 means 0.0007
     const subscripts = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
@@ -308,11 +308,11 @@
     const match = str.match(/^0\.(0+)(\d+)/);
     if (match) {
       const zeroCount = match[1].length;
-      const significantDigits = match[2].slice(0, 3);
+      const significantDigits = match[2].slice(0, 2); // Only 2 significant digits
       const subscriptNum = zeroCount.toString().split('').map(d => subscripts[parseInt(d)]).join('');
       return `0.0${subscriptNum}${significantDigits}`;
     }
-    return sol.toFixed(6);
+    return sol.toFixed(4);
   }
 
   function formatPrioTip(fee, tip) {
