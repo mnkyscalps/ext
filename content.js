@@ -248,21 +248,30 @@
     if (VALIDATOR_CACHE.has(cacheKey)) return VALIDATOR_CACHE.get(cacheKey);
 
     try {
-      // First get block info to get the validator
+      // Get block info
       const blockRes = await fetchWithTimeout(`${API_URL}/block/${slot}/info`, {
         headers: { 'ngrok-skip-browser-warning': 'true' }
-      }, 10000);
-      if (!blockRes.ok) return null;
-      const blockData = await blockRes.json();
+      }, 5000);
 
-      if (!blockData.proposer?.votePubkey) return null;
+      let blockData = { slot, nonVoteTransactions: 0, proposer: { votePubkey: null } };
+      if (blockRes.ok) {
+        blockData = await blockRes.json();
+      }
 
-      // Then get validator details
-      const validatorRes = await fetchWithTimeout(`${API_URL}/validator/${blockData.proposer.votePubkey}/info`, {
-        headers: { 'ngrok-skip-browser-warning': 'true' }
-      }, 10000);
-      if (!validatorRes.ok) return null;
-      const validatorData = await validatorRes.json();
+      // Get validator details if we have a pubkey
+      let validatorData = { name: 'Unknown', activatedStake: 0, commission: 0, city: '', country: '' };
+      if (blockData.proposer?.votePubkey) {
+        try {
+          const validatorRes = await fetchWithTimeout(`${API_URL}/validator/${blockData.proposer.votePubkey}/info`, {
+            headers: { 'ngrok-skip-browser-warning': 'true' }
+          }, 5000);
+          if (validatorRes.ok) {
+            validatorData = await validatorRes.json();
+          }
+        } catch {
+          // Validator lookup failed, use defaults
+        }
+      }
 
       const result = {
         block: blockData,
@@ -272,7 +281,11 @@
       VALIDATOR_CACHE.set(cacheKey, result);
       return result;
     } catch {
-      return null;
+      // Return basic data even on complete failure
+      return {
+        block: { slot, nonVoteTransactions: 0 },
+        validator: { name: 'Unknown', activatedStake: 0, commission: 0, city: '', country: '' }
+      };
     }
   }
 

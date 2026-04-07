@@ -14,7 +14,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # === CONFIG ===
-RPC_URL = "https://api.mainnet-beta.solana.com"  # Replace with your RPC
+RPC_URL = "https://fra.constellation.hellomoon.io/hmrAAERWETF7EEACM4D"  # Replace with your RPC
 
 # === TIP ADDRESSES ===
 # Known tip/MEV addresses for various providers
