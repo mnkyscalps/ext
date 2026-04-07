@@ -7,9 +7,10 @@
 
   // --- CONFIG ---
   const API_URL = 'https://ecotypically-undelayed-teodora.ngrok-free.dev';
-  const PANEL_WIDTH = 520;
+  const PANEL_WIDTH = 600;
   const IDX_COL_WIDTH = 70;
   const BLK_COL_WIDTH = 90;
+  const TIP_COL_WIDTH = 70;
   const POLL_INTERVAL = 2000;
 
   const CACHE = new Map();
@@ -48,6 +49,17 @@
       display: flex !important;
       min-width: ${BLK_COL_WIDTH}px !important;
       max-width: ${BLK_COL_WIDTH}px !important;
+      justify-content: flex-end;
+      overflow: hidden;
+      padding: 0 8px;
+      margin-left: 4px;
+    }
+
+    /* Tip column */
+    .axiom-col.axiom-col-tip {
+      display: flex !important;
+      min-width: ${TIP_COL_WIDTH}px !important;
+      max-width: ${TIP_COL_WIDTH}px !important;
       justify-content: flex-end;
       overflow: hidden;
       padding: 0 8px;
@@ -258,6 +270,13 @@
     return sol.toFixed(0) + ' SOL';
   }
 
+  function formatFee(lamports) {
+    const sol = lamports / 1e9;
+    if (sol >= 0.01) return sol.toFixed(3);
+    if (sol >= 0.001) return sol.toFixed(4);
+    return sol.toFixed(5);
+  }
+
   // --- 3. Tooltip Functions ---
   let currentTooltip = null;
   let hoverTimeout = null;
@@ -388,8 +407,15 @@
     blkHeader.style.maxWidth = BLK_COL_WIDTH + "px";
     blkHeader.innerHTML = `<span>Block</span>`;
 
+    const tipHeader = document.createElement("div");
+    tipHeader.className = "axiom-custom-header";
+    tipHeader.style.minWidth = TIP_COL_WIDTH + "px";
+    tipHeader.style.maxWidth = TIP_COL_WIDTH + "px";
+    tipHeader.innerHTML = `<span>Prio/Tip</span>`;
+
     headerRow.appendChild(idxHeader);
     headerRow.appendChild(blkHeader);
+    headerRow.appendChild(tipHeader);
     return true;
   }
 
@@ -411,6 +437,7 @@
     el.className = 'axiom-tx-info-container';
     const idx = info.txIndex !== null ? `#${info.txIndex + 1}` : '-';
     const slot = info.slot;
+    const fee = info.fee ? formatFee(info.fee) : '-';
 
     el.innerHTML = `
       <div class="axiom-col axiom-col-idx">
@@ -418,6 +445,9 @@
       </div>
       <div class="axiom-col axiom-col-blk">
         <span class="axiom-value axiom-block-value" data-slot="${slot}">${formatSlot(slot)}</span>
+      </div>
+      <div class="axiom-col axiom-col-tip">
+        <span class="axiom-value">${fee}</span>
       </div>
     `;
 

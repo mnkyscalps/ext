@@ -86,6 +86,9 @@ async def get_tx_info(signature: str):
 
     slot = tx["slot"]
 
+    # Get fee from transaction meta
+    fee = tx.get("meta", {}).get("fee", 0)
+
     block = await rpc("getBlock", [
         slot,
         {"encoding": "jsonParsed", "transactionDetails": "signatures", "maxSupportedTransactionVersion": 0, "commitment": "confirmed", "rewards": False}
@@ -100,7 +103,7 @@ async def get_tx_info(signature: str):
             tx_index = sigs.index(signature)
             total_txs = len(sigs)
 
-    return {"slot": slot, "txIndex": tx_index, "totalTxs": total_txs}
+    return {"slot": slot, "txIndex": tx_index, "totalTxs": total_txs, "fee": fee}
 
 
 if __name__ == "__main__":
