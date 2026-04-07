@@ -273,8 +273,20 @@
   function formatTip(lamports) {
     if (!lamports || lamports === 0) return '-';
     const sol = lamports / 1e9;
+
+    // For larger values, show normally
     if (sol >= 0.01) return sol.toFixed(4);
-    if (sol >= 0.001) return sol.toFixed(5);
+
+    // For small values, use subscript notation: 0.0₃7 means 0.0007
+    const subscripts = ['₀', '₁', '₂', '₃', '₄', '₅', '₆', '₇', '₈', '₉'];
+    const str = sol.toFixed(12);
+    const match = str.match(/^0\.(0+)(\d+)/);
+    if (match) {
+      const zeroCount = match[1].length;
+      const significantDigits = match[2].slice(0, 3); // Take up to 3 significant digits
+      const subscriptNum = zeroCount.toString().split('').map(d => subscripts[parseInt(d)]).join('');
+      return `0.0${subscriptNum}${significantDigits}`;
+    }
     return sol.toFixed(6);
   }
 
