@@ -190,16 +190,46 @@ SOLANA_VIEW_API = "https://transition-api.solanaview.com"
 
 @app.get("/block/{slot}/info")
 async def get_block_info(slot: int):
-    """Proxy to solanaview block info API"""
+    """Get block info using RPC getBlock call"""
     try:
-        async with httpx.AsyncClient(timeout=60.0) as client:
-            res = await client.get(f"{SOLANA_VIEW_API}/block/{slot}/info")
-            if res.status_code != 200:
-                raise HTTPException(res.status_code, "Block not found")
-            return res.json()
-    except httpx.TimeoutException:
-        raise HTTPException(504, "Timeout fetching block info")
+        block = await rpc("getBlock", [
+            slot,
+            {
+                "encoding": "jsonParsed",
+                "transactionDetails": "none",
+                "maxSupportedTransactionVersion": 0,
+                "rewards": True
+            }
+        ])
+
+        if not block:
+            raise HTTPException(404, "Block not found")
+
+        # Extract validator (leader) pubkey from rewards
+        # The "Fee" reward type indicates the block leader
+        leader_pubkey = None
+        rewards = block.get("rewards", [])
+        for reward in rewards:
+            if reward.get("rewardType") == "Fee":
+                leader_pubkey = reward.get("pubkey")
+                break
+
+        # Count transactions if available
+        tx_count = len(block.get("transactions", [])) if "transactions" in block else 0
+
+        return {
+            "slot": slot,
+            "blockTime": block.get("blockTime"),
+            "blockHeight": block.get("blockHeight"),
+            "proposer": {
+                "votePubkey": leader_pubkey
+            },
+            "nonVoteTransactions": tx_count
+        }
+    except HTTPException:
+        raise
     except Exception as e:
+        logger.error(f"Error getting block {slot}: {e}")
         raise HTTPException(500, str(e))
 
 
